@@ -1,0 +1,14 @@
+{
+  "name": "alan-shahoei/library-management-cli",
+  "description": "A command-line library management system with JSON file storage.",
+  "type": "project",
+  "license": "MIT",
+  "require": {
+    "php": "^8.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "AlanShahoei\\LibraryManagement\\": "src/"
+    }
+  }
+}
