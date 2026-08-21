@@ -8,8 +8,8 @@ use AlanShahoei\LibraryManagement\Application\Service\BookService;
 use AlanShahoei\LibraryManagement\Application\Service\LoanService;
 use AlanShahoei\LibraryManagement\Application\Service\MemberService;
 use DateTimeImmutable;
+use Exception;
 use RuntimeException;
-use Throwable;
 
 class ConsoleApplication
 {
@@ -93,7 +93,7 @@ class ConsoleApplication
             try {
                 $handler = $actions[$selectedOption]['handler'];
                 $handler();
-            } catch (Throwable $exception) {
+            } catch (Exception $exception) {
                 echo "Error: {$exception->getMessage()}" . PHP_EOL;
             }
         }
@@ -101,7 +101,7 @@ class ConsoleApplication
 
     private function handleAddBook(): void
     {
-        $title = $this->prompt('Title: ');
+        $title = $this->promptRequired('Title: ');
         $authors = $this->readAuthors();
         $edition = $this->promptOptional('Edition (optional): ');
 
@@ -112,8 +112,8 @@ class ConsoleApplication
 
     private function handleUpdateBook(): void
     {
-        $id = $this->prompt('Book ID: ');
-        $title = $this->prompt('Title: ');
+        $id = $this->promptRequired('Book ID: ');
+        $title = $this->promptRequired('Title: ');
         $authors = $this->readAuthors();
         $edition = $this->promptOptional('Edition (optional): ');
 
@@ -124,8 +124,8 @@ class ConsoleApplication
 
     private function handleAddBookCopy(): void
     {
-        $bookId = $this->prompt('Book ID: ');
-        $barcode = $this->prompt('Barcode: ');
+        $bookId = $this->promptRequired('Book ID: ');
+        $barcode = $this->promptRequired('Barcode: ');
 
         $bookCopy = $this->bookService->addBookCopy($bookId, $barcode);
 
@@ -134,7 +134,7 @@ class ConsoleApplication
 
     private function handleActivateBookCopy(): void
     {
-        $barcode = $this->prompt('Barcode: ');
+        $barcode = $this->promptRequired('Barcode: ');
         $bookCopy = $this->bookService->activateBookCopy($barcode);
 
         echo "Book copy activated successfully. Barcode: {$bookCopy->getBarcode()}" . PHP_EOL;
@@ -142,7 +142,7 @@ class ConsoleApplication
 
     private function handleDeactivateBookCopy(): void
     {
-        $barcode = $this->prompt('Barcode: ');
+        $barcode = $this->promptRequired('Barcode: ');
         $bookCopy = $this->bookService->deactivateBookCopy($barcode);
 
         echo "Book copy deactivated successfully. Barcode: {$bookCopy->getBarcode()}" . PHP_EOL;
@@ -168,7 +168,7 @@ class ConsoleApplication
 
     private function handleListBookCopies(): void
     {
-        $bookId = $this->prompt('Book ID: ');
+        $bookId = $this->promptRequired('Book ID: ');
         $bookCopies = $this->bookService->getBookCopies($bookId);
 
         if ($bookCopies === []) {
@@ -186,8 +186,8 @@ class ConsoleApplication
 
     private function handleRegisterMember(): void
     {
-        $fullName = $this->prompt('Full name: ');
-        $phoneNumber = $this->prompt('Phone number: ');
+        $fullName = $this->promptRequired('Full name: ');
+        $phoneNumber = $this->promptRequired('Phone number: ');
 
         $member = $this->memberService->registerMember($fullName, $phoneNumber);
 
@@ -196,9 +196,9 @@ class ConsoleApplication
 
     private function handleUpdateMember(): void
     {
-        $id = $this->prompt('Member ID: ');
-        $fullName = $this->prompt('Full name: ');
-        $phoneNumber = $this->prompt('Phone number: ');
+        $id = $this->promptRequired('Member ID: ');
+        $fullName = $this->promptRequired('Full name: ');
+        $phoneNumber = $this->promptRequired('Phone number: ');
 
         $member = $this->memberService->updateMember($id, $fullName, $phoneNumber);
 
@@ -207,7 +207,7 @@ class ConsoleApplication
 
     private function handleActivateMember(): void
     {
-        $id = $this->prompt('Member ID: ');
+        $id = $this->promptRequired('Member ID: ');
         $member = $this->memberService->activateMember($id);
 
         echo "Member activated successfully. ID: {$member->getId()}" . PHP_EOL;
@@ -215,7 +215,7 @@ class ConsoleApplication
 
     private function handleDeactivateMember(): void
     {
-        $id = $this->prompt('Member ID: ');
+        $id = $this->promptRequired('Member ID: ');
         $member = $this->memberService->deactivateMember($id);
 
         echo "Member deactivated successfully. ID: {$member->getId()}" . PHP_EOL;
@@ -240,8 +240,8 @@ class ConsoleApplication
 
     private function handleBorrowBook(): void
     {
-        $barcode = $this->prompt('Book copy barcode: ');
-        $memberId = $this->prompt('Member ID: ');
+        $barcode = $this->promptRequired('Book copy barcode: ');
+        $memberId = $this->promptRequired('Member ID: ');
 
         $loan = $this->loanService->borrowBook($barcode, $memberId, new DateTimeImmutable());
         $dueAt = $loan->getDueAt()->format(self::DATE_FORMAT);
@@ -251,7 +251,7 @@ class ConsoleApplication
 
     private function handleReturnBook(): void
     {
-        $barcode = $this->prompt('Book copy barcode: ');
+        $barcode = $this->promptRequired('Book copy barcode: ');
 
         $loan = $this->loanService->returnBook($barcode, new DateTimeImmutable());
         $returnedAt = $loan->getReturnedAt()?->format(self::DATE_FORMAT) ?? '-';
@@ -276,7 +276,8 @@ class ConsoleApplication
 
     private function handleListMemberLoans(): void
     {
-        $memberId = $this->prompt('Member ID: ');
+        $memberId = $this->promptRequired('Member ID: ');
+
         $this->displayLoans($this->loanService->getLoansByMemberId($memberId));
     }
 
@@ -301,9 +302,22 @@ class ConsoleApplication
 
     private function readAuthors(): array
     {
-        $authors = $this->prompt('Authors (comma-separated): ');
+        $authors = $this->promptRequired('Authors (comma-separated): ');
 
         return array_map('trim', explode(',', $authors));
+    }
+
+    private function promptRequired(string $message): string
+    {
+        while (true) {
+            $value = $this->prompt($message);
+
+            if ($value !== '') {
+                return $value;
+            }
+
+            echo 'Input cannot be empty.' . PHP_EOL;
+        }
     }
 
     private function promptOptional(string $message): ?string
